@@ -1,11 +1,17 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import { Image, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function HomeScreen() {
+  const colorScheme = useColorScheme();
+  const buttonColor = colorScheme === 'dark' ? '#1D3D47' : '#A1CEDC';
+  
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -19,6 +25,13 @@ export default function HomeScreen() {
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
+      
+      <TouchableOpacity 
+        style={[styles.reservaButton, { backgroundColor: buttonColor }]}
+        onPress={() => router.push('/(tabs)/computadores/reservas')}>
+        <ThemedText style={styles.buttonText}>Ver reservas</ThemedText>
+      </TouchableOpacity>
+
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
@@ -70,5 +83,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  reservaButton: {
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginVertical: 15,
+  },
+  buttonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
