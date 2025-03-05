@@ -1,7 +1,8 @@
-import { StyleSheet, FlatList, RefreshControl, Platform } from 'react-native';
+import { StyleSheet, FlatList, RefreshControl, Platform, View } from 'react-native';
 import { Stack } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -103,9 +104,10 @@ export default function TodasReservasScreen() {
 
         console.log('Número de reservas válidas encontradas:', reservasValidas.length);
         setReservas(reservasValidas);
-      } catch (e) {
+      } catch (e: unknown) {
         console.error('Error al procesar la respuesta:', e);
-        throw new Error('Error al procesar la respuesta del servidor: ' + e.message);
+        const errorMessage = e instanceof Error ? e.message : 'Error desconocido';
+        throw new Error('Error al procesar la respuesta del servidor: ' + errorMessage);
       }
     } catch (error: any) {
       console.error('Error detallado:', error);
@@ -121,33 +123,42 @@ export default function TodasReservasScreen() {
 
   const renderItem = ({ item }: { item: Reserva }) => (
     <ThemedView style={styles.reservaCard}>
-      <ThemedView style={styles.reservaHeader}>
-        <ThemedText style={styles.nombreAlumno}>
-          {item.alumno_nombre} {item.alumno_apellido}
-        </ThemedText>
-      </ThemedView>
-      
-      <ThemedView style={styles.reservaDetails}>
-        <ThemedView style={styles.detailRow}>
-          <ThemedText style={styles.label}>Fecha:</ThemedText>
-          <ThemedText style={styles.value}>
-            {new Date(item.fecha_reserva).toLocaleDateString('es-ES')}
+      {/* Header de la tarjeta */}
+      <ThemedView style={styles.cardHeader}>
+        <View style={styles.userIconContainer}>
+          <Ionicons name="person" size={24} color="#4dabf7" />
+        </View>
+        <View style={styles.headerTextContainer}>
+          <ThemedText style={styles.nombreAlumno}>
+            {item.alumno_nombre} {item.alumno_apellido}
           </ThemedText>
-        </ThemedView>
-        
-        <ThemedView style={styles.detailRow}>
-          <ThemedText style={styles.label}>Bloque:</ThemedText>
-          <ThemedText style={styles.value}>{item.bloque_reserva}</ThemedText>
-        </ThemedView>
+          <ThemedText style={styles.fechaCreacion}>
+            Creada: {new Date(item.created_at).toLocaleDateString('es-ES')}
+          </ThemedText>
+        </View>
+      </ThemedView>
 
-        {item.created_at && (
-          <ThemedView style={styles.detailRow}>
-            <ThemedText style={styles.label}>Creada:</ThemedText>
-            <ThemedText style={styles.value}>
-              {new Date(item.created_at).toLocaleDateString('es-ES')}
+      {/* Contenido de la tarjeta */}
+      <ThemedView style={styles.cardContent}>
+        <ThemedView style={styles.infoRow}>
+          <ThemedView style={styles.infoItem}>
+            <Ionicons name="calendar-outline" size={20} color="#4dabf7" />
+            <ThemedText style={styles.infoLabel}>Fecha</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              {new Date(item.fecha_reserva).toLocaleDateString('es-ES')}
             </ThemedText>
           </ThemedView>
-        )}
+
+          <View style={styles.verticalDivider} />
+
+          <ThemedView style={styles.infoItem}>
+            <Ionicons name="time-outline" size={20} color="#4dabf7" />
+            <ThemedText style={styles.infoLabel}>Bloque</ThemedText>
+            <ThemedText style={styles.infoValue}>
+              {item.bloque_reserva}
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
       </ThemedView>
     </ThemedView>
   );
@@ -158,11 +169,22 @@ export default function TodasReservasScreen() {
         options={{ 
           title: 'Todas las Reservas',
           headerShown: true,
+          headerStyle: {
+            backgroundColor: '#ffffff',
+          },
+          headerTintColor: '#2196F3',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            color: '#333',
+          },
         }} 
       />
 
       {error ? (
-        <ThemedText style={styles.error}>{error}</ThemedText>
+        <ThemedView style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={40} color="#ff6b6b" />
+          <ThemedText style={styles.error}>{error}</ThemedText>
+        </ThemedView>
       ) : (
         <FlatList
           data={reservas}
@@ -172,12 +194,16 @@ export default function TodasReservasScreen() {
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={obtenerReservas}
+              tintColor="#2196F3"
             />
           }
           ListEmptyComponent={
-            <ThemedText style={styles.emptyText}>
-              No hay reservas disponibles
-            </ThemedText>
+            <ThemedView style={styles.emptyContainer}>
+              <Ionicons name="calendar" size={50} color="#9e9e9e" />
+              <ThemedText style={styles.emptyText}>
+                No hay reservas disponibles
+              </ThemedText>
+            </ThemedView>
           }
           contentContainerStyle={styles.listContent}
         />
@@ -189,68 +215,131 @@ export default function TodasReservasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#f5f5f5',
   },
   listContent: {
+    padding: 16,
     paddingBottom: 20,
   },
   reservaCard: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     marginBottom: 16,
-    padding: 16,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#3a3a3a',
+    borderColor: '#e0e0e0',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3,
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
       android: {
         elevation: 3,
       },
     }),
   },
-  reservaHeader: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
     borderBottomWidth: 1,
-    borderBottomColor: '#3a3a3a',
-    paddingBottom: 8,
-    marginBottom: 8,
+    borderBottomColor: '#e0e0e0',
+  },
+  userIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   nombreAlumno: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4dabf7',
+    color: '#333',
+    marginBottom: 4,
   },
-  reservaDetails: {
-    gap: 8,
+  fechaCreacion: {
+    fontSize: 12,
+    color: '#757575',
   },
-  detailRow: {
+  cardContent: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+  },
+  infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
+    backgroundColor: '#ffffff',
   },
-  label: {
+  infoItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+    padding: 8,
+  },
+  verticalDivider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: '#e0e0e0',
+    marginHorizontal: 16,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#757575',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoValue: {
     fontSize: 14,
-    color: '#9e9e9e',
+    color: '#333',
     fontWeight: '500',
   },
-  value: {
-    fontSize: 14,
-    color: '#ffffff',
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 12,
+    backgroundColor: '#fff',
   },
   error: {
-    color: '#ff6b6b',
+    color: '#dc3545',
     textAlign: 'center',
-    margin: 20,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+    marginTop: 100,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   emptyText: {
-    textAlign: 'center',
-    marginTop: 40,
-    color: '#9e9e9e',
+    color: '#757575',
     fontSize: 16,
+    textAlign: 'center',
   },
 }); 

@@ -21,26 +21,29 @@ export default function DashboardScreen() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Cargar información del usuario
+  // Cargar información del usuario y verificar autenticación
   useEffect(() => {
-    const loadUserData = async () => {
+    const checkAuth = async () => {
       try {
-        const userDataString = await AsyncStorage.getItem('alumnoInfo');
-        if (userDataString) {
-          const parsedUserData = JSON.parse(userDataString);
-          setUserData(parsedUserData);
-        } else {
-          // Si no hay datos del usuario, redirigir al login
+        const token = await AsyncStorage.getItem('userToken');
+        const userDataString = await AsyncStorage.getItem('userData');
+        
+        if (!token || !userDataString) {
           router.replace('/(tabs)/auth/login');
+          return;
         }
+
+        const parsedUserData = JSON.parse(userDataString);
+        setUserData(parsedUserData);
       } catch (error) {
-        console.error('Error al cargar los datos del usuario:', error);
+        console.error('Error al verificar autenticación:', error);
+        router.replace('/(tabs)/auth/login');
       } finally {
         setLoading(false);
       }
     };
     
-    loadUserData();
+    checkAuth();
   }, []);
 
   const handleMenuItemPress = (route: string) => {
@@ -51,12 +54,9 @@ export default function DashboardScreen() {
 
   const handleLogout = async () => {
     try {
-      // Eliminar datos de sesión
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('alumnoInfo');
-      
-      // Redirigir al inicio
-      router.replace('/');
+      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem('userData');
+      router.replace('/(tabs)/auth/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }
