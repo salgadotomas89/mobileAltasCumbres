@@ -60,6 +60,11 @@ export default function DashboardScreen() {
       onPress: () => router.push('/(tabs)/explore'),
     },
     {
+      title: 'Ver Todas las Reservas',
+      icon: 'grid-outline',
+      onPress: () => router.push('/(tabs)/computadores/todas-reservas'),
+    },
+    {
       title: 'Cerrar Sesión',
       icon: 'log-out-outline',
       onPress: handleLogout,
