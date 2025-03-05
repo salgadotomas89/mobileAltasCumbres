@@ -379,8 +379,8 @@ export default function ReservarComputadorScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: 'Reserva de Computador', headerShown: true }} />
-      <ThemedText type="title" style={styles.mainTitle}>Reservas de Computador</ThemedText>
+      <Stack.Screen options={{ title: 'Laboratorio de Computación', headerShown: true }} />
+      <ThemedText type="title" style={styles.mainTitle}>Laboratorio de Computación</ThemedText>
       
       {authenticated ? (
         <Fragment>

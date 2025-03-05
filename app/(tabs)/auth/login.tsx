@@ -1,5 +1,5 @@
 import { StyleSheet, FlatList, ActivityIndicator, RefreshControl, TextInput, TouchableOpacity, Alert, Platform, Linking } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import React, { useState, useEffect, Fragment } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -158,8 +158,9 @@ export default function ReservarComputadorScreen() {
       });
       setAuthenticated(true);
       
-      // Obtener las reservas después de autenticarse exitosamente
-      obtenerReservas(data.token);
+      // Redirigir al dashboard después de iniciar sesión exitosamente
+      router.replace('/dashboard');
+      
     } catch (error: any) {
       console.error('Error en inicio de sesión:', error);
       setError('Error: ' + error.message);
@@ -291,7 +292,7 @@ export default function ReservarComputadorScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Stack.Screen options={{ title: 'Reserva de Computador', headerShown: true }} />
+      <Stack.Screen options={{ title: 'Login', headerShown: true }} />
       <ThemedText type="title" style={styles.mainTitle}>Inicio de sesión</ThemedText>
       
       {authenticated ? (
