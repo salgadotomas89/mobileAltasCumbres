@@ -28,8 +28,8 @@ export default function HomeScreen() {
       
       <TouchableOpacity 
         style={[styles.reservaButton, { backgroundColor: buttonColor }]}
-        onPress={() => router.push('/(tabs)/computadores/reservas')}>
-        <ThemedText style={styles.buttonText}>Ver reservas</ThemedText>
+        onPress={() => router.push('/(tabs)/auth/login')}>
+        <ThemedText style={styles.buttonText}>iniciar sesión</ThemedText>
       </TouchableOpacity>
 
       <ThemedView style={styles.stepContainer}>

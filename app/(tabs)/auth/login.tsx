@@ -34,34 +34,6 @@ const BASE_URL = 'https://altascumbressanclemente.cl';
 const AUTH_URL = '/api/alumno-auth/';
 const RESERVAS_URL = '/api/reservas-computador/';
 
-// Simulated data
-const datosSimulados: Reserva[] = [
-  {
-    id: 1,
-    alumno_nombre: 'Juan',
-    alumno_apellido: 'Pérez',
-    fecha_reserva: '2024-08-15',
-    bloque_reserva: 'Mañana',
-    created_at: '2024-08-10T15:30:45Z'
-  },
-  {
-    id: 2,
-    alumno_nombre: 'María',
-    alumno_apellido: 'González',
-    fecha_reserva: '2024-08-16',
-    bloque_reserva: 'Tarde',
-    created_at: '2024-08-10T16:20:30Z'
-  },
-  {
-    id: 3,
-    alumno_nombre: 'Pedro',
-    alumno_apellido: 'Sánchez',
-    fecha_reserva: '2024-08-17',
-    bloque_reserva: 'Mañana',
-    created_at: '2024-08-11T10:15:22Z'
-  }
-];
-
 export default function ReservarComputadorScreen() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [rut, setRut] = useState('');
@@ -71,7 +43,6 @@ export default function ReservarComputadorScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [modoSimulacion, setModoSimulacion] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const [customBaseUrl] = useState(BASE_URL);  // Mantener como estado pero sin permitir cambios
 
@@ -94,8 +65,6 @@ export default function ReservarComputadorScreen() {
       } catch (error) {
         console.error('Error al verificar autenticación:', error);
         setError('Error al verificar la autenticación');
-        // Si hay error, activar modo simulación
-        setModoSimulacion(true);
       }
     };
 
@@ -118,115 +87,82 @@ export default function ReservarComputadorScreen() {
     setError(null);
 
     try {
-      if (modoSimulacion) {
-        // Modo simulación: autenticación simulada
-        console.log('Modo simulación activado - Login simulado');
-        const simulatedToken = 'simulated-token-12345';
-        
-        // Simular que recibimos datos del alumno
-        const simulatedAlumnoInfo = {
-          id: 123,
-          nombre: "Alumno Simulado",
-          curso: "Simulación 101"
-        };
-        
-        await AsyncStorage.setItem('userToken', simulatedToken);
-        await AsyncStorage.setItem('userData', JSON.stringify(simulatedAlumnoInfo));
-        
-        setToken(simulatedToken);
-        setAlumnoInfo(simulatedAlumnoInfo);
-        setAuthenticated(true);
-        setReservas(datosSimulados);
-      } else {
-        // Modo real: autenticación con la API
-        console.log('Intentando obtener token desde:', customBaseUrl + AUTH_URL);
-        console.log('Datos enviados:', JSON.stringify({
+      // Modo real: autenticación con la API
+      console.log('Intentando obtener token desde:', customBaseUrl + AUTH_URL);
+      console.log('Datos enviados:', JSON.stringify({
+        rut: rut,
+        digitos_verificacion: digitosVerificacion
+      }));
+      
+      const response = await fetch(customBaseUrl + AUTH_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           rut: rut,
           digitos_verificacion: digitosVerificacion
-        }));
-        
-        const response = await fetch(customBaseUrl + AUTH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            rut: rut,
-            digitos_verificacion: digitosVerificacion
-          })
-        });
+        })
+      });
 
-        // Obtener el texto completo de la respuesta para depuración
-        const responseText = await response.text();
-        console.log('Respuesta del servidor (texto):', responseText);
-        
-        // Intentar parsear la respuesta como JSON
-        let errorData;
-        try {
-          errorData = JSON.parse(responseText);
-          console.log('Respuesta del servidor (JSON):', errorData);
-        } catch (e) {
-          console.log('La respuesta no es JSON válido');
-        }
-
-        if (!response.ok) {
-          // Si obtenemos un error de la API, analizar el mensaje
-          let errorMessage = 'Error al iniciar sesión';
-          
-          if (errorData) {
-            errorMessage = 
-              errorData.error || 
-              (errorData.non_field_errors ? errorData.non_field_errors[0] : null) ||
-              (errorData.rut ? errorData.rut[0] : null) ||
-              'Error al iniciar sesión';
-          }
-          
-          // Mostrar información más detallada sobre el error
-          const detailedError = `Error (${response.status}): ${errorMessage}\nDetalles: ${responseText.substring(0, 150)}`;
-          console.error(detailedError);
-          
-          throw new Error(errorMessage);
-        }
-
-        // Si la respuesta fue exitosa, ya tenemos el responseText
-        // Necesitamos parsearlo como JSON si aún no lo hemos hecho
-        const data = errorData || JSON.parse(responseText);
-        console.log('Token recibido:', data.token);
-        
-        // Guardar token y datos del alumno
-        await AsyncStorage.setItem('userToken', data.token);
-        await AsyncStorage.setItem('userData', JSON.stringify({
-          id: data.alumno_id,
-          nombre: data.nombre,
-          curso: data.curso
-        }));
-        
-        setToken(data.token);
-        setAlumnoInfo({
-          id: data.alumno_id,
-          nombre: data.nombre,
-          curso: data.curso
-        });
-        setAuthenticated(true);
-        
-        // Obtener las reservas después de autenticarse exitosamente
-        obtenerReservas(data.token);
+      // Obtener el texto completo de la respuesta para depuración
+      const responseText = await response.text();
+      console.log('Respuesta del servidor (texto):', responseText);
+      
+      // Intentar parsear la respuesta como JSON
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+        console.log('Respuesta del servidor (JSON):', errorData);
+      } catch (e) {
+        console.log('La respuesta no es JSON válido');
       }
+
+      if (!response.ok) {
+        // Si obtenemos un error de la API, analizar el mensaje
+        let errorMessage = 'Error al iniciar sesión';
+        
+        if (errorData) {
+          errorMessage = 
+            errorData.error || 
+            (errorData.non_field_errors ? errorData.non_field_errors[0] : null) ||
+            (errorData.rut ? errorData.rut[0] : null) ||
+            'Error al iniciar sesión';
+        }
+        
+        // Mostrar información más detallada sobre el error
+        const detailedError = `Error (${response.status}): ${errorMessage}\nDetalles: ${responseText.substring(0, 150)}`;
+        console.error(detailedError);
+        
+        throw new Error(errorMessage);
+      }
+
+      // Si la respuesta fue exitosa, ya tenemos el responseText
+      // Necesitamos parsearlo como JSON si aún no lo hemos hecho
+      const data = errorData || JSON.parse(responseText);
+      console.log('Token recibido:', data.token);
+      
+      // Guardar token y datos del alumno
+      await AsyncStorage.setItem('userToken', data.token);
+      await AsyncStorage.setItem('userData', JSON.stringify({
+        id: data.alumno_id,
+        nombre: data.nombre,
+        curso: data.curso
+      }));
+      
+      setToken(data.token);
+      setAlumnoInfo({
+        id: data.alumno_id,
+        nombre: data.nombre,
+        curso: data.curso
+      });
+      setAuthenticated(true);
+      
+      // Obtener las reservas después de autenticarse exitosamente
+      obtenerReservas(data.token);
     } catch (error: any) {
       console.error('Error en inicio de sesión:', error);
-      
-      // Si el error parece ser de CORS, activar automáticamente modo simulación
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-        setError('Problemas de conexión con el servidor. Modo simulación activado automáticamente.');
-        setModoSimulacion(true);
-        
-        // Intentar iniciar sesión de nuevo en modo simulación
-        setTimeout(() => {
-          iniciarSesion();
-        }, 500);
-      } else {
-        setError('Error: ' + error.message);
-      }
+      setError('Error: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -251,12 +187,8 @@ export default function ReservarComputadorScreen() {
     const tokenToUse = currentToken || token;
     
     try {
-      if (modoSimulacion) {
-        // En modo simulación, usar datos de ejemplo
-        console.log('Modo simulación activado - Usando datos simulados');
-        setReservas(datosSimulados);
-      } else if (tokenToUse) {
-        // En modo real, obtener datos de la API
+      if (tokenToUse) {
+        // Obtener datos de la API
         console.log('Obteniendo reservas desde:', customBaseUrl + RESERVAS_URL);
         
         const response = await fetch(customBaseUrl + RESERVAS_URL, {
@@ -287,15 +219,7 @@ export default function ReservarComputadorScreen() {
       }
     } catch (error: any) {
       console.error('Error al obtener reservas:', error);
-      
-      // Si el error parece ser de conexión, activar modo simulación
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-        setError('Problemas de conexión. Usando datos simulados.');
-        setModoSimulacion(true);
-        setReservas(datosSimulados);
-      } else {
-        setError('Error al obtener las reservas: ' + error.message);
-      }
+      setError('Error al obtener las reservas: ' + error.message);
     } finally {
       setRefreshing(false);
     }
@@ -321,30 +245,28 @@ export default function ReservarComputadorScreen() {
   // Renderizar el formulario de login con RUT
   const renderLogin = () => (
     <ThemedView style={styles.loginContainer}>
-      <ThemedText style={styles.loginTitle}>Iniciar Sesión</ThemedText>
       
       {error && <ThemedText style={styles.error}>{error}</ThemedText>}
       
-      <ThemedView style={styles.infoContainer}>
-        <ThemedText style={styles.infoText}>
-          Ingresa tu RUT con guión y dígito verificador (ej: 12345678-9)
-        </ThemedText>
-      </ThemedView>
+   
       
       <TextInput
         style={styles.input}
         placeholder="RUT (ej: 12345678-9)"
         value={rut}
-        onChangeText={setRut}
+        onChangeText={(text) => {
+          setRut(text);
+          // Extraer solo los dígitos del RUT
+          const digitsOnly = text.replace(/\D/g, '');
+          // Tomar los primeros 4 dígitos si hay suficientes
+          if (digitsOnly.length >= 4) {
+            setDigitosVerificacion(digitsOnly.substring(0, 4));
+          }
+        }}
         autoCapitalize="none"
       />
       
-      <ThemedView style={styles.infoContainer}>
-        <ThemedText style={styles.infoText}>
-          Ingresa los 4 primeros dígitos del RUT sin puntos
-        </ThemedText>
-      </ThemedView>
-      
+    
       <TextInput
         style={styles.input}
         placeholder="4 primeros dígitos de tu RUT"
@@ -354,16 +276,6 @@ export default function ReservarComputadorScreen() {
         maxLength={4}
         secureTextEntry={true}
       />
-      
-      <ThemedView style={styles.checkboxContainer}>
-        <TouchableOpacity 
-          style={[styles.checkbox, modoSimulacion ? styles.checkboxChecked : {}]}
-          onPress={() => setModoSimulacion(!modoSimulacion)}
-        />
-        <ThemedText style={styles.checkboxLabel}>
-          Modo simulación (usar datos de ejemplo)
-        </ThemedText>
-      </ThemedView>
       
       <TouchableOpacity 
         style={styles.botonLogin} 
@@ -380,17 +292,11 @@ export default function ReservarComputadorScreen() {
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ title: 'Reserva de Computador', headerShown: true }} />
-      <ThemedText type="title" style={styles.mainTitle}>Reservas de Computador</ThemedText>
+      <ThemedText type="title" style={styles.mainTitle}>Inicio de sesión</ThemedText>
       
       {authenticated ? (
         <Fragment>
           <ThemedView style={styles.header}>
-            <ThemedText style={styles.headerTitle}>Reservas de Computadores</ThemedText>
-            {modoSimulacion && (
-              <ThemedView style={styles.simulationBadge}>
-                <ThemedText style={styles.simulationText}>Datos Simulados</ThemedText>
-              </ThemedView>
-            )}
             {alumnoInfo && (
               <ThemedView style={styles.alumnoInfo}>
                 <ThemedText style={styles.nombreAlumno}>{alumnoInfo.nombre}</ThemedText>
@@ -398,7 +304,7 @@ export default function ReservarComputadorScreen() {
               </ThemedView>
             )}
             <TouchableOpacity style={styles.botonCerrarSesion} onPress={cerrarSesion}>
-              <ThemedText style={styles.textoBoton}>Cerrar </ThemedText>
+              <ThemedText style={styles.textoBoton}>Cerrar Sesión</ThemedText>
             </TouchableOpacity>
           </ThemedView>
           
@@ -520,17 +426,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  simulationBadge: {
-    backgroundColor: '#ff9800',
-    padding: 5,
-    borderRadius: 5,
-    marginLeft: 10,
-  },
-  simulationText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: 'white',
-  },
   configButton: {
     padding: 15,
     borderRadius: 8,
@@ -581,26 +476,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 5,
     fontWeight: 'bold',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginBottom: 15,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    marginRight: 10,
-  },
-  checkboxChecked: {
-    backgroundColor: '#2196F3',
-  },
-  checkboxLabel: {
-    fontSize: 14,
   },
   botonLogin: {
     width: '100%',
