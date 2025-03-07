@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 // Pantallas
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
+import NoticiasScreen from '../screens/NoticiasScreen';
+import PerfilScreen from '../screens/PerfilScreen';
 
 // Contexto de autenticación
 import { AuthContext } from '../context/AuthContext';
@@ -31,6 +33,24 @@ const MainTabs = () => {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Noticias" 
+        component={NoticiasScreen} 
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="newspaper" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Perfil" 
+        component={PerfilScreen} 
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
           ),
         }}
       />

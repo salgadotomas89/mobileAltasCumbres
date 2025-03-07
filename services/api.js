@@ -38,10 +38,6 @@ export const authService = {
       // La API podría esperar el RUT con formato (con puntos y guión)
       let rut = username.trim();
       
-      // Si el RUT no tiene guión, asumimos que es el formato sin puntos ni guión
-      // y lo dejamos así, ya que el servidor podría preferir este formato
-      // No aplicamos formato adicional para evitar problemas
-      
       console.log('Enviando datos:', { rut, digitos_verificacion: password.trim() });
       
       // Usar el endpoint correcto y los parámetros según documentación
@@ -50,17 +46,34 @@ export const authService = {
         digitos_verificacion: password.trim()
       });
       
-      console.log('Respuesta de login:', response.status);
+      console.log('Respuesta completa de la API:', JSON.stringify(response.data, null, 2));
+      console.log('Estado de la respuesta:', response.status);
       
-      if (response.data && response.data.token) {
-        console.log('Token recibido correctamente:', response.data.token.substring(0, 10) + '...');
-        await AsyncStorage.setItem('userToken', response.data.token);
-        console.log('Token guardado en AsyncStorage');
-        return response.data;
-      } else {
-        console.error('No se recibió un token en la respuesta:', response.data);
-        return null;
+      if (response.data) {
+        console.log('Datos recibidos:', response.data);
+        
+        if (response.data.token) {
+          console.log('Token recibido correctamente:', response.data.token.substring(0, 10) + '...');
+          await AsyncStorage.setItem('userToken', response.data.token);
+          
+          // Guardar los datos del alumno
+          const userData = {
+            rut: rut,
+            ...response.data.alumno // Asumiendo que la API devuelve los datos del alumno
+          };
+          
+          console.log('Datos del usuario a guardar:', JSON.stringify(userData, null, 2));
+          await AsyncStorage.setItem('userData', JSON.stringify(userData));
+          console.log('Datos del usuario guardados exitosamente');
+          
+          return {
+            token: response.data.token,
+            userData
+          };
+        }
       }
+      console.error('No se recibió un token en la respuesta:', response.data);
+      return null;
     } catch (error) {
       console.error('Error de login:', error.message);
       if (error.response) {
@@ -254,6 +267,60 @@ export const reservasService = {
       throw error;
     }
   },
+};
+
+// Servicio de alumnos
+export const alumnosService = {
+  // Obtener todos los alumnos
+  getAlumnos: async () => {
+    try {
+      const response = await api.get('api/alumnos/');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener alumnos:', error);
+      throw error;
+    }
+  },
+
+  // Obtener un alumno específico
+  getAlumno: async (id) => {
+    try {
+      const response = await api.get(`api/alumnos/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener alumno ${id}:`, error);
+      throw error;
+    }
+  },
+
+
+  // Obtener alumnos por rut
+  getAlumnosPorRut: async (rut) => {
+    try {
+      const response = await api.get('api/alumnos/', {
+        params: { rut }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener alumnos por rut:', error);
+      throw error;
+    }
+  },
+
+
+
+  // Obtener alumnos por curso
+  getAlumnosPorCurso: async (curso) => {
+    try {
+      const response = await api.get('api/alumnos/', {
+        params: { curso }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener alumnos por curso:', error);
+      throw error;
+    }
+  }
 };
 
 export default api;

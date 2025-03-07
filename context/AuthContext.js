@@ -70,9 +70,14 @@ export const AuthProvider = ({ children }) => {
             setUserToken(response.token);
             
             // Si hay datos del usuario
-            if (response.user) {
-              setUserData(response.user);
-              await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+            if (response.userData) {
+              console.log('Datos del usuario recibidos:', response.userData);
+              setUserData(response.userData);
+              await AsyncStorage.setItem('userData', JSON.stringify(response.userData));
+            } else {
+              console.log('No se recibieron datos del usuario en la respuesta');
+              setLoginError('Error: No se recibieron los datos del usuario');
+              return false;
             }
             
             return true;
