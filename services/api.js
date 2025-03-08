@@ -332,4 +332,147 @@ export const alumnosService = {
   }
 };
 
+// Servicio de noticias y eventos
+export const noticiasService = {
+  // Obtener todas las noticias
+  getNoticias: async () => {
+    try {
+      console.log('Obteniendo noticias...');
+      const response = await api.get('api/noticias/');
+      console.log('Respuesta completa de noticias:', JSON.stringify(response.data, null, 2));
+      
+      if (!response.data) {
+        console.log('No hay datos en la respuesta de noticias');
+        return [];
+      }
+      
+      // Procesar la respuesta según su estructura
+      let noticias = [];
+      
+      if (Array.isArray(response.data)) {
+        noticias = response.data;
+      } else if (response.data.results && Array.isArray(response.data.results)) {
+        noticias = response.data.results;
+      } else if (response.data.noticias && Array.isArray(response.data.noticias)) {
+        noticias = response.data.noticias;
+      } else if (typeof response.data === 'object' && response.data.id) {
+        noticias = [response.data];
+      }
+      
+      // Validar y formatear cada noticia
+      return noticias.map(noticia => ({
+        id: noticia.id,
+        titulo: noticia.titulo,
+        subtitulo: noticia.subtitulo,
+        texto: noticia.texto,
+        date: noticia.date,
+        redactor: noticia.redactor,
+        tituloDestacado: noticia.tituloDestacado,
+        destacado: noticia.destacado,
+        galeria: noticia.galeria,
+        noticia: noticia.noticia,
+        tema: noticia.tema,
+        audio: noticia.audio,
+        likes: noticia.likes
+      }));
+      
+    } catch (error) {
+      console.error('Error detallado al obtener noticias:', error);
+      if (error.response) {
+        console.error('Datos del error:', error.response.data);
+        console.error('Estado del error:', error.response.status);
+      }
+      throw error;
+    }
+  },
+
+  // Obtener todos los eventos
+  getEventos: async () => {
+    try {
+      console.log('Obteniendo eventos...');
+      const response = await api.get('api/eventos/');
+      console.log('Respuesta completa de eventos:', JSON.stringify(response.data, null, 2));
+      
+      if (!response.data) {
+        console.log('No hay datos en la respuesta de eventos');
+        return [];
+      }
+      
+      // Procesar la respuesta según su estructura
+      let eventos = [];
+      
+      if (Array.isArray(response.data)) {
+        eventos = response.data;
+      } else if (response.data.results && Array.isArray(response.data.results)) {
+        eventos = response.data.results;
+      } else if (response.data.eventos && Array.isArray(response.data.eventos)) {
+        eventos = response.data.eventos;
+      } else if (typeof response.data === 'object' && response.data.id) {
+        eventos = [response.data];
+      }
+      
+      // Validar y formatear cada evento
+      return eventos.map(evento => ({
+        id: evento.id,
+        fecha: evento.fecha,
+        titulo: evento.titulo,
+        texto: evento.texto
+      }));
+      
+    } catch (error) {
+      console.error('Error detallado al obtener eventos:', error);
+      if (error.response) {
+        console.error('Datos del error:', error.response.data);
+        console.error('Estado del error:', error.response.status);
+      }
+      throw error;
+    }
+  },
+
+  // Obtener todos los comunicados
+  getComunicados: async () => {
+    try {
+      console.log('Obteniendo comunicados...');
+      const response = await api.get('api/comunicados/');
+      console.log('Respuesta completa de comunicados:', JSON.stringify(response.data, null, 2));
+      
+      // Verificar la estructura de la respuesta
+      if (!response.data) {
+        console.log('No hay datos en la respuesta');
+        return [];
+      }
+      
+      // Si la respuesta es un array, devolverla directamente
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      // Si la respuesta tiene una propiedad results (paginación)
+      if (response.data.results) {
+        return response.data.results;
+      }
+      
+      // Si la respuesta es un objeto con los comunicados en otra propiedad
+      if (response.data.comunicados) {
+        return response.data.comunicados;
+      }
+      
+      // Si es un solo comunicado
+      if (typeof response.data === 'object' && response.data.id) {
+        return [response.data];
+      }
+      
+      console.log('Estructura de respuesta no reconocida:', response.data);
+      return [];
+    } catch (error) {
+      console.error('Error detallado al obtener comunicados:', error);
+      if (error.response) {
+        console.error('Datos del error:', error.response.data);
+        console.error('Estado del error:', error.response.status);
+      }
+      throw error;
+    }
+  }
+};
+
 export default api;
