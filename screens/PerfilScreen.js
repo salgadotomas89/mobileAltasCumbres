@@ -33,27 +33,37 @@ export default function PerfilScreen() {
       
       console.log('=== Depuración carga de datos alumno ===');
       console.log('RUT del alumno:', rut);
-      console.log('Datos completos del usuario:', userData);
+      console.log('Datos completos del usuario:', JSON.stringify(userData, null, 2));
       
       if (!rut) {
         console.log('Error: RUT no encontrado en userData');
         throw new Error('No se encontró el RUT del alumno');
       }
 
-      console.log('Intentando obtener datos del alumno con RUT:', rut);
+      // Formatear el RUT para la consulta (eliminar puntos y guión si existen)
+      const rutLimpio = rut.replace(/\./g, '').replace(/-/g, '');
+      console.log('RUT formateado para consulta:', rutLimpio);
+      
       console.log('URL del servicio:', alumnosService.baseURL);
+      console.log('Intentando obtener datos del alumno con RUT:', rutLimpio);
       
       // Usar el método getAlumnosPorRut para obtener los datos
-      const response = await alumnosService.getAlumnosPorRut(rut);
-      console.log('Respuesta de la API:', response);
+      const response = await alumnosService.getAlumnosPorRut(rutLimpio);
+      console.log('Respuesta completa de la API:', JSON.stringify(response, null, 2));
       
       // La API devuelve una lista, pero como el RUT es único, tomamos el primer elemento
       if (response && Array.isArray(response) && response.length > 0) {
-        console.log('Datos del alumno encontrados:', response[0]);
+        console.log('Datos del alumno encontrados:', JSON.stringify(response[0], null, 2));
         setAlumnoData(response[0]);
       } else {
-        console.log('No se encontraron datos para el RUT:', rut);
-        throw new Error('No se encontraron datos del alumno');
+        // Si no hay datos en la API, usar los datos del contexto
+        console.log('No se encontraron datos en la API, usando datos del contexto');
+        if (userData) {
+          console.log('Usando datos del contexto:', JSON.stringify(userData, null, 2));
+          setAlumnoData(userData);
+        } else {
+          throw new Error('No se encontraron datos del alumno');
+        }
       }
     } catch (error) {
       console.error('Error detallado al cargar datos del alumno:', error);
@@ -72,12 +82,32 @@ export default function PerfilScreen() {
   }, []);
 
   const handleLogout = () => {
+    console.log('Botón de cerrar sesión presionado');
+    console.log('Función logout disponible:', !!logout);
+    
+    if (!logout) {
+      console.error('La función logout no está disponible en el contexto');
+      Alert.alert('Error', 'No se pudo cerrar sesión. Por favor, intenta de nuevo.');
+      return;
+    }
+
     Alert.alert(
       'Cerrar sesión',
       '¿Estás seguro que deseas cerrar sesión?',
       [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Salir', style: 'destructive', onPress: logout }
+        { 
+          text: 'Cancelar', 
+          style: 'cancel',
+          onPress: () => console.log('Cierre de sesión cancelado')
+        },
+        { 
+          text: 'Salir', 
+          style: 'destructive', 
+          onPress: () => {
+            console.log('Confirmación de cierre de sesión');
+            logout();
+          }
+        }
       ]
     );
   };
@@ -105,7 +135,10 @@ export default function PerfilScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mi Perfil</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={24} color="#666" />
+          <View style={styles.logoutButtonContent}>
+            <Ionicons name="log-out-outline" size={24} color="#fff" />
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -172,11 +205,27 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ddd',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#333',
   },
   logoutButton: {
-    padding: 5,
+    backgroundColor: '#dc3545',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoutButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontWeight: '600',
+    fontSize: 14,
   },
   content: {
     flex: 1,

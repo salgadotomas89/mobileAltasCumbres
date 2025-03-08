@@ -139,12 +139,14 @@ export const AuthProvider = ({ children }) => {
     },
     
     logout: async () => {
+      console.log('Iniciando proceso de logout desde AuthContext');
       setIsLoading(true);
       try {
         console.log('Cerrando sesión...');
         
         // Primero limpiar el almacenamiento
         try {
+          console.log('Intentando limpiar AsyncStorage...');
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
           console.log('AsyncStorage limpiado correctamente');
@@ -153,18 +155,19 @@ export const AuthProvider = ({ children }) => {
         }
         
         // Luego limpiar el estado (incluso si hay error en AsyncStorage)
+        console.log('Limpiando estado del contexto...');
         setUserToken(null);
         setUserData(null);
         
         // Intentar llamar al servicio pero no esperar por él (por si falla)
         try {
+          console.log('Intentando llamar al servicio de logout...');
           authService.logout().catch(err => console.error('Error en servicio logout:', err));
         } catch (serviceError) {
           console.error('Error al llamar servicio logout:', serviceError);
         }
         
         console.log('Sesión cerrada correctamente');
-        // Añadimos una alerta para informar al usuario
         Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente');
       } catch (error) {
         console.error('Error general al cerrar sesión:', error);
@@ -174,9 +177,12 @@ export const AuthProvider = ({ children }) => {
         try {
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
-        } catch (e) {}
+        } catch (e) {
+          console.error('Error al limpiar storage durante error:', e);
+        }
       } finally {
         setIsLoading(false);
+        console.log('Proceso de logout completado');
       }
     },
     

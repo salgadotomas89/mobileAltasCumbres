@@ -59,10 +59,19 @@ export const authService = {
           // Guardar los datos del alumno
           const userData = {
             rut: rut,
-            ...response.data.alumno // Asumiendo que la API devuelve los datos del alumno
+            // Asegurarnos de que estamos guardando los datos correctos según la respuesta de la API
+            ...(response.data.alumno || {}),  // Si no hay alumno, usar objeto vacío
+            ...(response.data.usuario || {}), // Por si viene en usuario en lugar de alumno
           };
           
+          console.log('Estructura completa de response.data:', JSON.stringify(response.data, null, 2));
           console.log('Datos del usuario a guardar:', JSON.stringify(userData, null, 2));
+          
+          // Asegurarnos de que tenemos un RUT
+          if (!userData.rut) {
+            userData.rut = rut; // Usar el RUT del login si no viene en la respuesta
+          }
+          
           await AsyncStorage.setItem('userData', JSON.stringify(userData));
           console.log('Datos del usuario guardados exitosamente');
           

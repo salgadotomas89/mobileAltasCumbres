@@ -174,7 +174,7 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.logoContainer}>
             <Text style={styles.logoText}>Altas Cumbres</Text>
-            <Text style={styles.versionText}>Versión: 1.0.0</Text>
+            <Text style={styles.versionText}>Versión: 1.0.2</Text>
           </View>
           
           <View style={styles.formContainer}>
@@ -233,30 +233,7 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
 
-            {/* Botones de prueba para RUTs específicos */}
-            <View style={styles.testButtonsContainer}>
-              <Text style={styles.testTitle}>Prueba con estos RUTs:</Text>
-              <View style={styles.testButtons}>
-                <TouchableOpacity
-                  style={styles.testButton}
-                  onPress={() => {
-                    setUsername("17.410.208-2");
-                    setPassword("1741");
-                  }}
-                >
-                  <Text style={styles.testButtonText}>17.410.208-2</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.testButton}
-                  onPress={() => {
-                    setUsername("24.327.449-4");
-                    setPassword("2432");
-                  }}
-                >
-                  <Text style={styles.testButtonText}>24.327.449-4</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
