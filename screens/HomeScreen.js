@@ -137,28 +137,56 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Función para obtener el próximo día laborable (lunes a viernes)
+  // Función para obtener los próximos días laborables (hasta 3 días)
   const getNextWorkingDate = () => {
     const hoy = new Date();
-    const diaSemana = hoy.getDay(); // 0 = domingo, 6 = sábado
+    const diaSemanaHoy = hoy.getDay(); // 0 = domingo, 6 = sábado
     
-    let diasASumar = 1; // Por defecto sumamos 1 día
-    
-    // Si hoy es viernes (5) o sábado (6), no hay próximo día laborable disponible
-    if (diaSemana === 5 || diaSemana === 6) {
-      return null; // No hay próximo día laborable disponible
+    // Si hoy es viernes (5) o sábado (6), no hay próximos días laborables disponibles
+    if (diaSemanaHoy === 5 || diaSemanaHoy === 6) {
+      return null;
     }
     
-    // Si hoy es domingo (0), el próximo día laborable es mañana (lunes)
-    if (diaSemana === 0) {
-      diasASumar = 1;
-    }
-    
-    // Calcular la próxima fecha
-    const proximaFecha = new Date();
-    proximaFecha.setDate(hoy.getDate() + diasASumar);
+    // Obtener la fecha del próximo día laborable
+    let proximaFecha = new Date(hoy);
+    proximaFecha.setDate(hoy.getDate() + 1);
     
     return proximaFecha.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+  };
+
+  // Función para obtener todos los días laborables disponibles (hasta 3 días)
+  const getDiasLaborablesDisponibles = () => {
+    const hoy = new Date();
+    const diasDisponibles = [];
+    let diasContados = 0;
+    let diasRevisados = 0;
+    
+    while (diasContados < 3 && diasRevisados < 5) { // Limitamos a revisar 5 días para evitar bucles infinitos
+      const fechaRevisar = new Date(hoy);
+      fechaRevisar.setDate(hoy.getDate() + diasRevisados + 1);
+      const diaSemana = fechaRevisar.getDay();
+      
+      // Si es un día laborable (lunes a viernes)
+      if (diaSemana !== 0 && diaSemana !== 6) {
+        diasDisponibles.push(fechaRevisar.toISOString().split('T')[0]);
+        diasContados++;
+      }
+      
+      diasRevisados++;
+    }
+    
+    return diasDisponibles;
+  };
+
+  // Función para verificar si la fecha es válida (dentro de los próximos 3 días laborables)
+  const verificarFechaValida = (fecha) => {
+    if (!fecha) return false;
+    
+    const fechaSeleccionada = new Date(fecha);
+    const diasDisponibles = getDiasLaborablesDisponibles();
+    
+    // Verificar si la fecha seleccionada está en los días disponibles
+    return diasDisponibles.includes(fecha);
   };
 
   // Variables de estado para el formulario de nueva reserva
@@ -320,16 +348,19 @@ export default function HomeScreen() {
   const getMensajeDisponibilidad = () => {
     const hoy = new Date();
     const diaSemana = hoy.getDay(); // 0 = domingo, 6 = sábado
+    const diasDisponibles = getDiasLaborablesDisponibles();
     
-    if (diaSemana === 5) {
-      return "Hoy es viernes. Intenta el domingo para reservar el lunes.";
-    } else if (diaSemana === 6) {
-      return "Hoy es sábado. Intenta mañana para reservar el lunes.";
+    if (diasDisponibles.length === 0) {
+      if (diaSemana === 5) {
+        return "Hoy es viernes. Intenta el domingo para reservar el lunes.";
+      } else if (diaSemana === 6) {
+        return "Hoy es sábado. Intenta mañana para reservar el lunes.";
+      } else {
+        return "No hay días disponibles para reservar en este momento.";
+      }
     } else {
-      const proximoDia = getNextWorkingDate();
-      return proximoDia 
-        ? `Puedes reservar para mañana: ${formatDate(proximoDia)}` 
-        : "No hay días disponibles para reservar en este momento.";
+      const fechasFormateadas = diasDisponibles.map(fecha => formatDate(fecha)).join(', ');
+      return `Puedes reservar para los siguientes días: ${fechasFormateadas}`;
     }
   };
 
@@ -451,42 +482,6 @@ export default function HomeScreen() {
     return reservasEnBloque.length < 3; // true si hay menos de 3 reservas
   };
 
-  // Función para verificar si la fecha es válida (próximo día laborable)
-  const verificarFechaValida = (fecha) => {
-    if (!fecha) return false;
-    
-    const fechaSeleccionada = new Date(fecha);
-    const hoy = new Date();
-    const diaSemanaHoy = hoy.getDay(); // 0 = domingo, 6 = sábado
-    const diaSemanaSeleccionado = fechaSeleccionada.getDay();
-    
-    // Primero verificamos que la fecha seleccionada sea un día laborable (lunes a viernes)
-    if (diaSemanaSeleccionado === 0 || diaSemanaSeleccionado === 6) {
-      return false; // No se permite reservar para sábado o domingo
-    }
-    
-    // Si hoy es viernes o sábado, no se permite reservar
-    if (diaSemanaHoy === 5 || diaSemanaHoy === 6) {
-      return false;
-    }
-    
-    // Si hoy es domingo, verificamos que sea para el lunes
-    if (diaSemanaHoy === 0) {
-      const lunes = new Date();
-      lunes.setDate(hoy.getDate() + 1);
-      return fechaSeleccionada.getFullYear() === lunes.getFullYear() &&
-             fechaSeleccionada.getMonth() === lunes.getMonth() &&
-             fechaSeleccionada.getDate() === lunes.getDate();
-    }
-    
-    // Para lunes a jueves, verificamos que sea para el día siguiente
-    const manana = new Date();
-    manana.setDate(hoy.getDate() + 1);
-    return fechaSeleccionada.getFullYear() === manana.getFullYear() &&
-           fechaSeleccionada.getMonth() === manana.getMonth() &&
-           fechaSeleccionada.getDate() === manana.getDate();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -591,13 +586,29 @@ export default function HomeScreen() {
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Fecha de Reserva</Text>
                   <View style={styles.dateContainer}>
-                    <TextInput
-                      style={[styles.formInput, styles.dateInput]}
-                      value={formatDate(newReserva.fecha_reserva)}
-                      editable={false}
-                    />
+                    <View style={styles.diasDisponiblesContainer}>
+                      {getDiasLaborablesDisponibles().map((fecha) => (
+                        <TouchableOpacity
+                          key={fecha}
+                          style={[
+                            styles.diaButton,
+                            newReserva.fecha_reserva === fecha && styles.diaButtonActive
+                          ]}
+                          onPress={() => setNewReserva({...newReserva, fecha_reserva: fecha})}
+                        >
+                          <Text 
+                            style={[
+                              styles.diaButtonText,
+                              newReserva.fecha_reserva === fecha && styles.diaButtonTextActive
+                            ]}
+                          >
+                            {formatDate(fecha)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                     <Text style={styles.dateHint}>
-                      Solo se permiten reservas para el próximo día laborable
+                      Selecciona uno de los próximos 3 días laborables disponibles
                     </Text>
                   </View>
                 </View>
@@ -959,5 +970,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     marginHorizontal: 20,
+  },
+  diasDisponiblesContainer: {
+    flexDirection: 'column',
+    gap: 8,
+    marginBottom: 10,
+  },
+  diaButton: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#f8f9fa',
+  },
+  diaButtonActive: {
+    backgroundColor: '#007bff',
+    borderColor: '#0056b3',
+  },
+  diaButtonText: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  diaButtonTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
