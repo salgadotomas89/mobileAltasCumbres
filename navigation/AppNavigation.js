@@ -6,9 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Pantallas
 import LoginScreen from '../screens/LoginScreen';
+import AlternativeLoginScreen from '../screens/AlternativeLoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import NoticiasScreen from '../screens/NoticiasScreen';
 import PerfilScreen from '../screens/PerfilScreen';
+import AlumnosScreen from '../screens/AlumnosScreen';
+import PerfilAlumnoScreen from '../screens/PerfilAlumnoScreen';
 
 // Contexto de autenticación
 import { AuthContext } from '../context/AuthContext';
@@ -17,8 +20,21 @@ import { AuthContext } from '../context/AuthContext';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Navegador de alumnos (incluye lista de alumnos y perfil de alumno)
+const AlumnosStackNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ListaAlumnos" component={AlumnosScreen} />
+      <Stack.Screen name="PerfilAlumno" component={PerfilAlumnoScreen} />
+    </Stack.Navigator>
+  );
+};
+
 // Navegación principal (después del login)
 const MainTabs = () => {
+  const { userType } = useContext(AuthContext);
+  const isProfesor = userType === 'profesor';
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -45,6 +61,17 @@ const MainTabs = () => {
           ),
         }}
       />
+      {isProfesor && (
+        <Tab.Screen 
+          name="Alumnos" 
+          component={AlumnosStackNavigator} 
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="people" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen 
         name="Perfil" 
         component={PerfilScreen} 
@@ -75,7 +102,10 @@ export default function AppNavigation() {
           <Stack.Screen name="Main" component={MainTabs} />
         ) : (
           // Usuario no autenticado
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="AlternativeLogin" component={AlternativeLoginScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

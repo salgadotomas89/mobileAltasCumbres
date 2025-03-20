@@ -29,7 +29,7 @@ api.interceptors.request.use(
 
 // Servicio de autenticación
 export const authService = {
-  // Login con usuario y contraseña
+  // Login con usuario y contraseña para alumnos
   login: async (username, password) => {
     try {
       console.log('Intentando login con RUT:', username);
@@ -91,6 +91,47 @@ export const authService = {
         console.error('No se recibió respuesta del servidor');
       } else {
         console.error('Error al configurar la solicitud:', error.message);
+      }
+      throw error;
+    }
+  },
+  
+  // Login para profesores
+  loginProfesor: async (username, password) => {
+    try {
+      console.log('Intentando login de profesor con username:', username);
+      
+      const response = await api.post('usuarios/api/login/', {
+        username: username.trim(),
+        password: password.trim()
+      });
+      
+      console.log('Respuesta completa de la API:', JSON.stringify(response.data, null, 2));
+      
+      if (response.data) {
+        if (response.data.token) {
+          await AsyncStorage.setItem('userToken', response.data.token);
+          await AsyncStorage.setItem('userType', 'profesor');
+          
+          const userData = {
+            ...response.data.usuario,
+            tipo: 'profesor'
+          };
+          
+          await AsyncStorage.setItem('userData', JSON.stringify(userData));
+          
+          return {
+            token: response.data.token,
+            userData
+          };
+        }
+      }
+      console.error('No se recibió un token en la respuesta:', response.data);
+      return null;
+    } catch (error) {
+      console.error('Error de login profesor:', error.message);
+      if (error.response) {
+        console.error('Detalles del error:', error.response.status, error.response.data);
       }
       throw error;
     }
@@ -280,13 +321,79 @@ export const reservasService = {
 
 // Servicio de alumnos
 export const alumnosService = {
-  // Obtener todos los alumnos
-  getAlumnos: async () => {
+  // Obtener todos los alumnos con paginación
+  getAlumnos: async (page = 1, limit = 20) => {
     try {
-      const response = await api.get('api/alumnos/');
-      return response.data;
+      console.log(`Obteniendo lista de alumnos (página ${page})...`);
+      const response = await api.get('api/alumnos/', {
+        params: {
+          page,
+          limit
+        }
+      });
+      console.log('Respuesta completa de alumnos:', JSON.stringify(response.data, null, 2));
+
+      if (!response.data) {
+        console.log('No hay datos en la respuesta de alumnos');
+        return {
+          alumnos: [],
+          hasMore: false,
+          totalPages: 0,
+          currentPage: page
+        };
+      }
+
+      // Procesar la respuesta según su estructura
+      let alumnos = [];
+      let hasMore = false;
+      let totalPages = 1;
+
+      if (Array.isArray(response.data)) {
+        alumnos = response.data;
+        hasMore = alumnos.length === limit;
+      } else if (response.data.results && Array.isArray(response.data.results)) {
+        alumnos = response.data.results;
+        hasMore = !!response.data.next;
+        totalPages = Math.ceil(response.data.count / limit);
+      } else if (response.data.alumnos && Array.isArray(response.data.alumnos)) {
+        alumnos = response.data.alumnos;
+        hasMore = alumnos.length === limit;
+      } else if (typeof response.data === 'object' && response.data.id) {
+        alumnos = [response.data];
+        hasMore = false;
+      }
+
+      // Validar y formatear cada alumno
+      const formattedAlumnos = alumnos.map(alumno => ({
+        id: alumno.id,
+        nombre: alumno.nombre,
+        rut: alumno.rut,
+        curso_id: alumno.curso_id,
+        materno: alumno.materno,
+        sexo: alumno.sexo,
+        edad: alumno.edad,
+        fechaNacimiento: alumno.fechaNacimiento,
+        fechaIncorporacion: alumno.fechaIncorporacion,
+        procedencia: alumno.procedencia,
+        reprobado: alumno.reprobado,
+        direccion: alumno.direccion,
+        nacionalidad: alumno.nacionalidad,
+        puebloOriginario: alumno.puebloOriginario,
+        alergico: alumno.alergico
+      }));
+
+      return {
+        alumnos: formattedAlumnos,
+        hasMore,
+        totalPages,
+        currentPage: page
+      };
     } catch (error) {
-      console.error('Error al obtener alumnos:', error);
+      console.error('Error detallado al obtener alumnos:', error);
+      if (error.response) {
+        console.error('Datos del error:', error.response.data);
+        console.error('Estado del error:', error.response.status);
+      }
       throw error;
     }
   },
@@ -294,6 +401,7 @@ export const alumnosService = {
   // Obtener un alumno específico
   getAlumno: async (id) => {
     try {
+      console.log(`Obteniendo alumno con ID: ${id}`);
       const response = await api.get(`api/alumnos/${id}/`);
       return response.data;
     } catch (error) {
@@ -302,29 +410,44 @@ export const alumnosService = {
     }
   },
 
-
   // Obtener alumnos por rut
   getAlumnosPorRut: async (rut) => {
     try {
+      console.log(`Buscando alumno con RUT: ${rut}`);
       const response = await api.get('api/alumnos/', {
         params: { rut }
       });
-      return response.data;
+      
+      if (!response.data) return [];
+      
+      const alumnos = Array.isArray(response.data) ? response.data :
+                     response.data.results ? response.data.results :
+                     response.data.alumnos ? response.data.alumnos :
+                     [response.data];
+      
+      return alumnos;
     } catch (error) {
       console.error('Error al obtener alumnos por rut:', error);
       throw error;
     }
   },
 
-
-
   // Obtener alumnos por curso
   getAlumnosPorCurso: async (curso) => {
     try {
+      console.log(`Buscando alumnos del curso: ${curso}`);
       const response = await api.get('api/alumnos/', {
         params: { curso }
       });
-      return response.data;
+      
+      if (!response.data) return [];
+      
+      const alumnos = Array.isArray(response.data) ? response.data :
+                     response.data.results ? response.data.results :
+                     response.data.alumnos ? response.data.alumnos :
+                     [response.data];
+      
+      return alumnos;
     } catch (error) {
       console.error('Error al obtener alumnos por curso:', error);
       throw error;

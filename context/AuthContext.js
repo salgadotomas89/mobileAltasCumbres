@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [loginError, setLoginError] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [userType, setUserType] = useState(null);
 
   // Verificar si hay un token almacenado al cargar la app
   useEffect(() => {
@@ -20,9 +21,11 @@ export const AuthProvider = ({ children }) => {
         console.log('Verificando autenticación al iniciar...');
         const storedToken = await AsyncStorage.getItem('userToken');
         const storedUserData = await AsyncStorage.getItem('userData');
+        const storedUserType = await AsyncStorage.getItem('userType');
         
         if (storedToken) {
           setUserToken(storedToken);
+          setUserType(storedUserType);
           if (storedUserData) {
             setUserData(JSON.parse(storedUserData));
           }
@@ -137,6 +140,74 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
+
+    loginProfesor: async (username, password) => {
+      setIsLoading(true);
+      setLoginError(null);
+      try {
+        if (!username || !password) {
+          setLoginError('Por favor, ingresa tu usuario y contraseña');
+          setIsLoading(false);
+          return false;
+        }
+        
+        console.log('Intentando login de profesor con:', username);
+        
+        try {
+          const response = await authService.loginProfesor(username, password);
+          
+          if (response && response.token) {
+            console.log('Login de profesor exitoso, token recibido');
+            setUserToken(response.token);
+            setUserType('profesor');
+            
+            if (response.userData) {
+              console.log('Datos del profesor recibidos:', response.userData);
+              setUserData(response.userData);
+              return true;
+            } else {
+              console.log('No se recibieron datos del profesor en la respuesta');
+              setLoginError('Error: No se recibieron los datos del profesor');
+              return false;
+            }
+          } else {
+            console.log('Login falló - respuesta sin token');
+            setLoginError('Credenciales inválidas');
+            return false;
+          }
+        } catch (apiError) {
+          console.error('Error de API en login de profesor:', apiError.message);
+          
+          if (apiError.response) {
+            switch (apiError.response.status) {
+              case 400:
+                setLoginError('Datos incorrectos. Revisa tu usuario y contraseña');
+                break;
+              case 401:
+                setLoginError('Credenciales inválidas');
+                break;
+              case 404:
+                setLoginError('Servicio no disponible');
+                break;
+              default:
+                setLoginError(`Error de servidor: ${apiError.response.status}`);
+            }
+          } else if (apiError.request) {
+            setLoginError('Error de conexión. Verifica tu red');
+          } else {
+            setLoginError('Error al procesar la solicitud');
+          }
+          
+          return false;
+        }
+      } catch (error) {
+        console.error('Error general en login de profesor:', error);
+        setLoginError('Error inesperado. Inténtalo de nuevo');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
     
     logout: async () => {
       console.log('Iniciando proceso de logout desde AuthContext');
@@ -149,6 +220,7 @@ export const AuthProvider = ({ children }) => {
           console.log('Intentando limpiar AsyncStorage...');
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
+          await AsyncStorage.removeItem('userType');
           console.log('AsyncStorage limpiado correctamente');
         } catch (storageError) {
           console.error('Error al limpiar AsyncStorage:', storageError);
@@ -158,6 +230,7 @@ export const AuthProvider = ({ children }) => {
         console.log('Limpiando estado del contexto...');
         setUserToken(null);
         setUserData(null);
+        setUserType(null);
         
         // Intentar llamar al servicio pero no esperar por él (por si falla)
         try {
@@ -174,9 +247,11 @@ export const AuthProvider = ({ children }) => {
         // Incluso si hay error, asegurarse de limpiar todo
         setUserToken(null);
         setUserData(null);
+        setUserType(null);
         try {
           await AsyncStorage.removeItem('userToken');
           await AsyncStorage.removeItem('userData');
+          await AsyncStorage.removeItem('userType');
         } catch (e) {
           console.error('Error al limpiar storage durante error:', e);
         }
@@ -189,7 +264,8 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     userToken,
     userData,
-    loginError
+    loginError,
+    userType
   };
 
   return (

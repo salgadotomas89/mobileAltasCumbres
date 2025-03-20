@@ -20,54 +20,100 @@ const InfoRow = ({ label, value }) => (
   </View>
 );
 
+const ProfesorPerfil = ({ userData, handleLogout }) => {
+  return (
+    <ScrollView style={styles.content}>
+      <View style={styles.profileSection}>
+        <View style={styles.avatarContainer}>
+          <Ionicons name="person-circle-outline" size={80} color="#007bff" />
+          <Text style={styles.nameText}>{`${userData?.first_name || ''} ${userData?.last_name || ''}`}</Text>
+          <Text style={styles.emailText}>{userData?.email || 'Email no disponible'}</Text>
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Información del Profesor</Text>
+          <InfoRow label="Usuario" value={userData?.username} />
+          <InfoRow label="Nombre" value={userData?.first_name} />
+          <InfoRow label="Apellido" value={userData?.last_name} />
+          <InfoRow label="Email" value={userData?.email} />
+          <InfoRow label="Tipo de Usuario" value={userData?.is_staff ? 'Profesor' : 'Usuario'} />
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+const AlumnoPerfil = ({ alumnoData, formatFecha }) => {
+  return (
+    <ScrollView style={styles.content}>
+      <View style={styles.profileSection}>
+        <View style={styles.avatarContainer}>
+          <Ionicons name="person-circle-outline" size={80} color="#007bff" />
+          <Text style={styles.rutText}>{alumnoData?.rut || 'RUT no disponible'}</Text>
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Información Personal</Text>
+          <InfoRow label="Nombre" value={alumnoData?.nombre} />
+          <InfoRow label="Apellido Materno" value={alumnoData?.materno} />
+          <InfoRow label="Sexo" value={alumnoData?.sexo} />
+          <InfoRow label="Edad" value={alumnoData?.edad?.toString()} />
+          <InfoRow label="Fecha de Nacimiento" value={formatFecha(alumnoData?.fechaNacimiento)} />
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Información Académica</Text>
+          <InfoRow label="Curso ID" value={alumnoData?.curso_id?.toString()} />
+          <InfoRow label="Fecha de Incorporación" value={formatFecha(alumnoData?.fechaIncorporacion)} />
+          <InfoRow label="Procedencia" value={alumnoData?.procedencia} />
+          <InfoRow label="Reprobado" value={alumnoData?.reprobado} />
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Información Adicional</Text>
+          <InfoRow label="Dirección" value={alumnoData?.direccion} />
+          <InfoRow label="Nacionalidad" value={alumnoData?.nacionalidad} />
+          <InfoRow label="Pueblo Originario" value={alumnoData?.puebloOriginario} />
+          <InfoRow label="Alergias" value={alumnoData?.alergico} />
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
 export default function PerfilScreen() {
-  const { userData, logout } = useContext(AuthContext);
+  const { userData, logout, userType } = useContext(AuthContext);
   const [alumnoData, setAlumnoData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const cargarDatosAlumno = async () => {
+    if (userType === 'profesor') {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      // Obtener el rut del alumno del contexto de autenticación
       const rut = userData?.rut;
       
-      console.log('=== Depuración carga de datos alumno ===');
-      console.log('RUT del alumno:', rut);
-      console.log('Datos completos del usuario:', JSON.stringify(userData, null, 2));
-      
       if (!rut) {
-        console.log('Error: RUT no encontrado en userData');
         throw new Error('No se encontró el RUT del alumno');
       }
 
-      // Formatear el RUT para la consulta (eliminar puntos y guión si existen)
       const rutLimpio = rut.replace(/\./g, '').replace(/-/g, '');
-      console.log('RUT formateado para consulta:', rutLimpio);
-      
-      console.log('URL del servicio:', alumnosService.baseURL);
-      console.log('Intentando obtener datos del alumno con RUT:', rutLimpio);
-      
-      // Usar el método getAlumnosPorRut para obtener los datos
       const response = await alumnosService.getAlumnosPorRut(rutLimpio);
-      console.log('Respuesta completa de la API:', JSON.stringify(response, null, 2));
       
-      // La API devuelve una lista, pero como el RUT es único, tomamos el primer elemento
       if (response && Array.isArray(response) && response.length > 0) {
-        console.log('Datos del alumno encontrados:', JSON.stringify(response[0], null, 2));
         setAlumnoData(response[0]);
       } else {
-        // Si no hay datos en la API, usar los datos del contexto
-        console.log('No se encontraron datos en la API, usando datos del contexto');
         if (userData) {
-          console.log('Usando datos del contexto:', JSON.stringify(userData, null, 2));
           setAlumnoData(userData);
         } else {
           throw new Error('No se encontraron datos del alumno');
         }
       }
     } catch (error) {
-      console.error('Error detallado al cargar datos del alumno:', error);
-      console.error('Stack trace:', error.stack);
+      console.error('Error al cargar datos del alumno:', error);
       Alert.alert(
         'Error',
         'No se pudieron cargar los datos del alumno. Por favor, intenta de nuevo más tarde.'
@@ -82,31 +128,15 @@ export default function PerfilScreen() {
   }, []);
 
   const handleLogout = () => {
-    console.log('Botón de cerrar sesión presionado');
-    console.log('Función logout disponible:', !!logout);
-    
-    if (!logout) {
-      console.error('La función logout no está disponible en el contexto');
-      Alert.alert('Error', 'No se pudo cerrar sesión. Por favor, intenta de nuevo.');
-      return;
-    }
-
     Alert.alert(
       'Cerrar sesión',
       '¿Estás seguro que deseas cerrar sesión?',
       [
-        { 
-          text: 'Cancelar', 
-          style: 'cancel',
-          onPress: () => console.log('Cierre de sesión cancelado')
-        },
+        { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Salir', 
           style: 'destructive', 
-          onPress: () => {
-            console.log('Confirmación de cierre de sesión');
-            logout();
-          }
+          onPress: () => logout()
         }
       ]
     );
@@ -142,39 +172,11 @@ export default function PerfilScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle-outline" size={80} color="#007bff" />
-            <Text style={styles.rutText}>{alumnoData?.rut || 'RUT no disponible'}</Text>
-          </View>
-
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Información Personal</Text>
-            <InfoRow label="Nombre" value={alumnoData?.nombre} />
-            <InfoRow label="Apellido Materno" value={alumnoData?.materno} />
-            <InfoRow label="Sexo" value={alumnoData?.sexo} />
-            <InfoRow label="Edad" value={alumnoData?.edad?.toString()} />
-            <InfoRow label="Fecha de Nacimiento" value={formatFecha(alumnoData?.fechaNacimiento)} />
-          </View>
-
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Información Académica</Text>
-            <InfoRow label="Curso ID" value={alumnoData?.curso_id?.toString()} />
-            <InfoRow label="Fecha de Incorporación" value={formatFecha(alumnoData?.fechaIncorporacion)} />
-            <InfoRow label="Procedencia" value={alumnoData?.procedencia} />
-            <InfoRow label="Reprobado" value={alumnoData?.reprobado} />
-          </View>
-
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Información Adicional</Text>
-            <InfoRow label="Dirección" value={alumnoData?.direccion} />
-            <InfoRow label="Nacionalidad" value={alumnoData?.nacionalidad} />
-            <InfoRow label="Pueblo Originario" value={alumnoData?.puebloOriginario} />
-            <InfoRow label="Alergias" value={alumnoData?.alergico} />
-          </View>
-        </View>
-      </ScrollView>
+      {userType === 'profesor' ? (
+        <ProfesorPerfil userData={userData} handleLogout={handleLogout} />
+      ) : (
+        <AlumnoPerfil alumnoData={alumnoData} formatFecha={formatFecha} />
+      )}
     </SafeAreaView>
   );
 }
@@ -249,35 +251,43 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
-    fontWeight: '500',
   },
   sectionContainer: {
-    marginBottom: 20,
+    marginTop: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 5,
+  },
+  nameText: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  emailText: {
+    marginTop: 5,
+    fontSize: 14,
+    color: '#666',
   },
   infoRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#eee',
   },
   label: {
-    flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: '#666',
-    fontWeight: '500',
+    flex: 1,
   },
   value: {
-    flex: 2,
-    fontSize: 15,
+    fontSize: 16,
     color: '#333',
-  }
+    flex: 2,
+    textAlign: 'right',
+  },
 }); 

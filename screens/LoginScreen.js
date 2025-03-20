@@ -82,7 +82,7 @@ const validarRut = (rut) => {
   return dv === dvEsperado;
 };
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading, loginError } = useContext(AuthContext);
@@ -173,10 +173,21 @@ export default function LoginScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>Altas Cumbres</Text>
+            <Image
+              source={require('../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.versionText}>Versión: 1.0.2</Text>
           </View>
           
+          <TouchableOpacity 
+            style={styles.alternativeLoginButton}
+            onPress={() => navigation.navigate('AlternativeLogin')}
+          >
+            <Text style={styles.alternativeLoginButtonText}>+</Text>
+          </TouchableOpacity>
+
           <View style={styles.formContainer}>
             <Text style={styles.title}>Iniciar Sesión</Text>
             <Text style={styles.subtitle}>Ingresa con tu RUT y los 4 primeros dígitos como contraseña</Text>
@@ -256,8 +267,9 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 150,
+    height: 150,
+    marginBottom: 10,
   },
   logoText: {
     fontSize: 32,
@@ -367,5 +379,29 @@ const styles = StyleSheet.create({
   testButtonText: {
     fontSize: 12,
     color: '#495057',
+  },
+  alternativeLoginButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FF0000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  alternativeLoginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });
